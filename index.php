@@ -1,9 +1,15 @@
 <?php
+//test link: www.m.me/1422846014463338?ref=mid=1
 $verify_token = "gnosis"; // Verify token
 if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_REQUEST['hub_verify_token'] == $verify_token) {
     echo $_REQUEST['hub_challenge'];
 
 } else {
+    //get config values
+    $config_array = parse_ini_string(file_get_contents('config.ini'));
+    $token = $config_array['token'];
+    $version = $config_array['version'];
+
     //get input json
     $fb = file_get_contents("php://input");
     //saving all inputs
@@ -44,9 +50,6 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
         file_put_contents("storage.json", $storage);
     }
 
-    //fb page token
-    $token = "token";
-
     //get user profile info
     $user_info_link = "https://graph.facebook.com/v2.6/" . $user_id . "?access_token=" . $token;
     $user_info = file_get_contents($user_info_link);
@@ -57,10 +60,22 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
 
     require('functions.php');
 
-    if (isset($ref)) {
-        botType($user_id,$token);
-        $ref = explode("=",$ref);
-        $market_id = $ref[1];
+    //send version
+    if (strtolower($message) == "version") {
+        sendText($version,$user_id,$token);
+        exit();
+    }
+
+
+    if (isset($ref) || (int)$message == (1 || 2 || 3 || 4 || 5 || 6) && $status != "userAddress") {
+        if(isset($ref)) {
+            botType($user_id, $token);
+            $ref = explode("=", $ref);
+            $market_id = $ref[1];
+        } else {
+            $market_id = $message;
+        }
+
 
         $text = "Hi $first_name!";
         sendText($text,$user_id,$token);
@@ -103,7 +118,6 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
             $text = "So if I got you right, you’re here regarding the ICO of ".$projectName." (".$projectToken."), correct?";
             sendText($text,$user_id,$token,$buttons);
         } else {
-            $version = "v0.5.1";
             botType($user_id,$token);
             $text = "I’m this is version ".$version.". On a future version I’ll show you the active markets here.";
             sendText($text,$user_id,$token);
@@ -141,7 +155,7 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
             $text = "YES / NO ?";
             sendText($text,$user_id,$token);
             botType($user_id,$token);
-            $text = $votesTotal." investors have backed their prediction by ".$ethTotal." in this market.";
+            $text = $votesTotal." investors have backed their prediction by ".$ethTotal." ETH in this market.";
             sendText($text,$user_id,$token);
             botType($user_id,$token);
             $text = "Current market prediction is ".$prediction." YES.";
@@ -293,7 +307,7 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
             $storage = file_get_contents("storage.json");
             $storage = json_decode($storage, true);
             $storage[$user_id] = array("status" => "userAddress",
-                    "market_id" => $market_id);
+                "market_id" => $market_id);
             $storage = json_encode($storage);
             file_put_contents("storage.json", $storage);
 
