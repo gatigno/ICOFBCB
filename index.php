@@ -1,5 +1,4 @@
 <?php
-//test link: www.m.me/454816641521860?ref=mid=1
 $verify_token = "gnosis"; // Verify token
 if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_REQUEST['hub_verify_token'] == $verify_token) {
     echo $_REQUEST['hub_challenge'];
@@ -46,7 +45,7 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
     }
 
     //fb page token
-    $token = "EAAHnlt0SNPoBAEDZCrdNURnuKKhUk5NSoI5EMaxGWQqBZAwxrbpoG1Gw3eSqDqFrfKjdyMwdlhnPIW8vgZB6K8Tm5iQs7VU2vlALc5i8SPIPWbqEaZAihDYsnQORZBD1Lk0kPDtq4gIyMovg06ZAzyZCHz1SytJD6oWuK8f0K7AcwZDZD";
+    $token = "token";
 
     //get user profile info
     $user_info_link = "https://graph.facebook.com/v2.6/" . $user_id . "?access_token=" . $token;
@@ -104,8 +103,9 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
             $text = "So if I got you right, you’re here regarding the ICO of ".$projectName." (".$projectToken."), correct?";
             sendText($text,$user_id,$token,$buttons);
         } else {
+            $version = "v0.5.1";
             botType($user_id,$token);
-            $text = "Records not found";
+            $text = "I’m this is version ".$version.". On a future version I’ll show you the active markets here.";
             sendText($text,$user_id,$token);
         }
     } elseif (strpos($payload_quick, "B01") === 0) {
@@ -126,10 +126,8 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
             $prediction = $result_json[0]->prediction;
             $projectName = $result_json[0]->projectName;
             $projectToken = $result_json[0]->token;
-            $votesYES = $result_json[0]->votesYES;
-            $ethYES = $result_json[0]->ethYES;
-            $votesNO = $result_json[0]->votesNO;
-            $ethNO = $result_json[0]->ethNO;
+            $votesTotal = $result_json[0]->votesTotal;
+            $ethTotal = $result_json[0]->ethTotal;
             $resolutionDate = $result_json[0]->resolutionDate;
             $chart = str_replace("\u0026", "&", $result_json[0]->chart);
             $resolutionCountDown = round((strtotime($resolutionDate) - time())/86400);
@@ -143,19 +141,16 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
             $text = "YES / NO ?";
             sendText($text,$user_id,$token);
             botType($user_id,$token);
-            $text = $votesYES." people voted “YES”, backing their votes by ".$ethYES." ETH.";
+            $text = $votesTotal." investors have backed their prediction by ".$ethTotal." in this market.";
             sendText($text,$user_id,$token);
             botType($user_id,$token);
-            $text = $votesNO." people voted “NO”, backing their votes by ".$ethNO." ETH.";
-            sendText($text,$user_id,$token);
-            botType($user_id,$token);
-            $text = "Bottom line - Current market prediction is ".$prediction." YES.";
+            $text = "Current market prediction is ".$prediction." YES.";
             sendText($text,$user_id,$token);
             botType($user_id,$token);
 
             $payload = array('url' => $chart);
             $attachment = array('type' => 'image',
-                  'payload' => $payload);
+                'payload' => $payload);
             $data = array('recipient' => array('id' => $user_id),
                 'message' => array('attachment' => $attachment));
             send($data,$token);
@@ -243,16 +238,21 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
         $choose = $payload_quick[1];
         $market_id = $payload_quick[2];
 
+        $link = "https://sheetsu.com/apis/v1.0/0a1abb92d1d5";
+        $result_string = file_get_contents($link);
+        $result_json = json_decode($result_string);
+        $systemWallet = $result_json[0]->systemWallet;
+        $qrCode = str_replace("\u0026", "&", $result_json[0]->qrCode);
+
         $text = "Please send ".$choose." ETH to the following address:";
         sendText($text,$user_id,$token);
         botType($user_id,$token);
-        $text = "0xfb89917a9e6b24a10e9004d808dd8717243fde3d";
-        sendText($text,$user_id,$token);
+        sendText($systemWallet,$user_id,$token);
         botType($user_id,$token);
         $text = "You can also scan this code with your wallet (i.e Jaxx):";
         sendText($text,$user_id,$token);
         botType($user_id,$token);
-        $payload = array('url' => "https://upload.wikimedia.org/wikipedia/commons/3/38/Qr-code-ver-10.png");
+        $payload = array('url' => $qrCode);
         $attachment = array('type' => 'image',
             'payload' => $payload);
         $data = array('recipient' => array('id' => $user_id),
