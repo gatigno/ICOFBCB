@@ -75,6 +75,16 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
         exit(200);
     }
 
+    if ($payload == "GET_STARTED_PAYLOAD") {
+        if (isset($fb->entry[0]->messaging[0]->postback->referral->ref)) {
+            $ref = $fb->entry[0]->messaging[0]->postback->referral->ref;
+        } else {
+            $text = "Welcome. I’m the Gnosis Bot. Go to http://yaniv.dreamhosters.com/gnosis-insider/ please!";
+            sendText($text,$user_id,$token);
+            exit();
+        }
+    }
+
 
     if (isset($ref) || (int)$message == (1 || 2 || 3 || 4 || 5 || 6) && $status != "userAddress") {
         if(isset($ref)) {
