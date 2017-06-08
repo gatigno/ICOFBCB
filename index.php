@@ -74,19 +74,41 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
         updateValueDB('notificationID',$notificationID,'dateTimeResponse',date("Y/m/d H:i:s"));
         exit(200);
     }
-
+    //get started
     if ($payload == "GET_STARTED_PAYLOAD") {
         if (isset($fb->entry[0]->messaging[0]->postback->referral->ref)) {
             $ref = $fb->entry[0]->messaging[0]->postback->referral->ref;
         } else {
-            $text = "Welcome. I’m the Gnosis Bot. Go to http://yaniv.dreamhosters.com/gnosis-insider/ please!";
-            sendText($text,$user_id,$token);
+            $link = "https://sheetsu.com/apis/v1.0/02eb4bdf06d4";
+            $result_string = file_get_contents($link);
+            $result_json = json_decode($result_string);
+
+            for($i = 0; $i < count($result_json); $i++) {
+                $button = array('type' => "postback",
+                    'title' => "Go To Market",
+                    'payload' => "mid=".$result_json[$i]->id);
+                $buttons = [$button];
+
+                $elements[$i] = json_encode(array("title" => $result_json[$i]->title,
+                    "image_url" => $result_json[$i]->imageURL,
+                    "subtitle" => "Current prediction: ".$result_json[$i]->prediction,
+                    "buttons" => $buttons));
+            }
+
+            $payload = array('template_type' => "generic",
+                'elements' => $elements);
+            $attachment = array('type' => "template",
+                'payload' => $payload);
+            $data = array('recipient' => array('id' => $user_id),
+                'message' => array('attachment' => $attachment));
+
+            send($data,$token);
             exit();
         }
     }
-
-
-    if (isset($ref) || (int)$message == (1 || 2 || 3 || 4 || 5 || 6) && $status != "userAddress") {
+    //flow
+    if (isset($ref) || (int)$message == (1 || 2 || 3 || 4 || 5 || 6) && $status != "userAddress" || strpos($payload, "mid=") === 0) {
+        if(isset($payload)) $ref = $payload;
         if(isset($ref)) {
             botType($user_id, $token);
             $ref = explode("=", $ref);
@@ -94,7 +116,6 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
         } else {
             $market_id = $message;
         }
-
 
         $text = "Hi $first_name!";
         sendText($text,$user_id,$token);
