@@ -35,12 +35,13 @@
     }
 
 
-    function createRowDB($user_id,$name,$address) {
+    function createRowDB($user_id,$name,$address,$env) {
         $url = "https://sheetsu.com/apis/v1.0/13a8a99eb990";
 
         $data = array("userID" => "$user_id",
             "userName" => $name,
-            "address" => $address);
+            "address" => $address,
+            "env" => $env);
 
         $data_string = json_encode($data);
 
@@ -53,4 +54,19 @@
         );
         curl_exec($ch);
         curl_close($ch);
+    }
+
+
+    function updateValueDB($search_field,$search_value,$change_field,$change_value) {
+        $data = '{ "'.$change_field.'": "'.$change_value.'" }';
+        $url = "https://sheetsu.com/apis/v1.0/7eaa4e913947/".$search_field."/".$search_value;
+        $headers = array('Content-Type: application/json');
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_URL, $url);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'PATCH');
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+        curl_exec($curl);
+        curl_close($curl);
     }

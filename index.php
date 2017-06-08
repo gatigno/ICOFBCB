@@ -9,6 +9,7 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
     $config_array = parse_ini_string(file_get_contents('config.ini'));
     $token = $config_array['token'];
     $version = $config_array['version'];
+    $env = $config_array['env'];
 
     //get input json
     $fb = file_get_contents("php://input");
@@ -63,7 +64,15 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
     //send version
     if (strtolower($message) == "version") {
         sendText($version,$user_id,$token);
-        exit();
+        exit(200);
+    } elseif (strpos($payload_quick, "notification_answer") === 0) {
+        $payload_quick = explode("_",$payload_quick);
+        $notificationID = $payload_quick[2];
+        $answer = $payload_quick[3];
+
+        updateValueDB('notificationID',$notificationID,'qrUserResponse',$answer);
+        updateValueDB('notificationID',$notificationID,'dateTimeResponse',date("Y/m/d H:i:s"));
+        exit(200);
     }
 
 
@@ -210,19 +219,29 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
 
         $market_id = $result_json[0]->id;
         $prediction = $result_json[0]->prediction;
-        $prediction = ((int)substr($prediction, 0, -1))/100;
+        $yesL = $result_json[0]->yesL;
+        $yesM = $result_json[0]->yesM;
+        $yesH = $result_json[0]->yesH;
+        $noL = $result_json[0]->noL;
+        $noM = $result_json[0]->noM;
+        $noH = $result_json[0]->noH;
 
         if ($choose == "yes") {
             $userPrediction = "YES";
 
-            $potentialRevenue = number_format(1/$prediction, 2, '.', '');
+            $roiL = abs((int)$prediction - ($yesL*100));
+            $roiM = abs((int)$prediction - ($yesM*100));
+            $roiH = abs((int)$prediction - ($yesH*100));
         } elseif ($choose == "no") {
             $userPrediction = "NO";
 
-            $potentialRevenue = number_format(1/(1-$prediction), 2, '.', '');
+            $roiL = abs((int)$prediction - ($noL*100));
+            $roiM = abs((int)$prediction - ($noM*100));
+            $roiH = abs((int)$prediction - ($noH*100));
         }
 
-        $text = "Current revenue potential for voting ".$userPrediction." is $".$potentialRevenue." for every $1 you put.";
+        $text = "Potential revenue in current market state is:\n+".$roiL."% for 0.1 ETH\n+".$roiM."% for 0.5 ETH\n+".$roiH."% for 1 ETH";
+
         sendText($text,$user_id,$token);
         botType($user_id,$token);
         $button_1 = array(
@@ -334,7 +353,7 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
         $name = $first_name." ".$last_name;
         $address = $message;
         //write to db
-        createRowDB($user_id,$name,$address);
+        createRowDB($user_id,$name,$address,$env);
 
         $link = "https://sheetsu.com/apis/v1.0/02eb4bdf06d4/search?id=" . $stored_market_id;
         $result_string = file_get_contents($link);
