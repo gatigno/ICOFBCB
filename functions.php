@@ -3,7 +3,6 @@
         $data = array('recipient' => array('id' => $id),
             'sender_action' => 'typing_on');
         send($data,$token);
-        //sleep(1);
     }
 
     function sendText($text,$id,$token,$optional_replies = null) {
@@ -15,7 +14,6 @@
         }
         send($data,$token);
     }
-
 
     function send($data,$token) {
         $url = "https://graph.facebook.com/v2.7/me/messages?access_token=" . $token;
@@ -33,7 +31,6 @@
         curl_exec($ch);
         curl_close($ch);
     }
-
 
     function createRowDB($user_id,$name,$address,$env) {
         $url = "https://sheetsu.com/apis/v1.0/13a8a99eb990";
@@ -55,7 +52,6 @@
         curl_exec($ch);
         curl_close($ch);
     }
-
 
     function updateValueDB($search_field,$search_value,$change_field,$change_value) {
         $data = '{ "'.$change_field.'": "'.$change_value.'" }';
