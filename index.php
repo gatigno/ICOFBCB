@@ -259,22 +259,38 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
 
         if ($choose == "yes") {
             $userPrediction = "YES";
+            $userTablePrediction = "Yes";
 
             $roiL = abs((int)$prediction - ($yesL*100));
             $roiM = abs((int)$prediction - ($yesM*100));
             $roiH = abs((int)$prediction - ($yesH*100));
         } elseif ($choose == "no") {
             $userPrediction = "NO";
+            $userTablePrediction = "No";
 
             $roiL = abs((int)$prediction - ($noL*100));
             $roiM = abs((int)$prediction - ($noM*100));
             $roiH = abs((int)$prediction - ($noH*100));
         }
 
+        $data = array("marketID" => $market_id,
+            "timestamp" => time(),
+            "userID" => "",
+            "prediction" => $userTablePrediction,
+            "ethBet" => "",
+            "ethAddress" => "");
+        dynamicCreateRowDB("https://sheetsu.com/apis/v1.0/02eb4bdf06d4/sheets/predictions",$data);
+
         $text = "Potential revenue in current market state is:\n+".$roiL."% for 0.1 ETH\n+".$roiM."% for 0.5 ETH\n+".$roiH."% for 1 ETH";
 
         sendText($text,$user_id,$token);
         botType($user_id,$token);
+        $button_0 = array(
+            "content_type" => "text",
+            "title" => "Voting Only (0 ETH)",
+            "payload" => "B03_voting_".$market_id
+        );
+
         $button_1 = array(
             "content_type" => "text",
             "title" => "Low (0.1 ETH)",
@@ -293,7 +309,7 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
             "payload" => "B03_1.0_".$market_id
         );
 
-        $buttons = [$button_1,$button_2,$button_3];
+        $buttons = [$button_0,$button_1,$button_2,$button_3];
 
         $text = "What’s your level of certainty with your prediction?";
         sendText($text,$user_id,$token,$buttons);
@@ -301,6 +317,23 @@ if (!empty($_REQUEST['hub_mode']) && $_REQUEST['hub_mode'] == 'subscribe' && $_R
         $payload_quick = explode("_",$payload_quick);
         $choose = $payload_quick[1];
         $market_id = $payload_quick[2];
+
+        if ($choose == "voting") {
+            $link = "https://sheetsu.com/apis/v1.0/02eb4bdf06d4/search?id=" . $market_id;
+            $result_string = file_get_contents($link);
+            $result_json = json_decode($result_string);
+
+            $market_id = $result_json[0]->id;
+            $resolutionDate = $result_json[0]->resolutionDate;
+            $resolutionCountDown = round((strtotime($resolutionDate) - time()) / 86400);
+
+            $text = "Congratulations! Market resolution is in ".$resolutionCountDown." days. I’ll remind you about this and give you an update 24h before the due date. ";
+            sendText($text,$user_id,$token);
+            botType($user_id,$token);
+            $text = "Good luck!";
+            sendText($text,$user_id,$token);
+            exit(200);
+        }
 
         $link = "https://sheetsu.com/apis/v1.0/0a1abb92d1d5";
         $result_string = file_get_contents($link);
